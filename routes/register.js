@@ -1,18 +1,22 @@
 let express = require('express');
 let router = express.Router();
-let db = require('better-sqlite3')('../users.db');
+let db = require('better-sqlite3')('users.db');
 
 router.get('/', (req, res) => {
-	res.render('register');
+	if (req.session.loggedin)
+		return res.redirect('/');
+	res.render('register', { error: false });
 });
 
-router.post('/', function(req, res, next) {
-	if (!(req.body.username && req.body.password)) res.render('/register', {error: 'Username or password not supplied'});
+router.post('/', function(req, res) {
+	if (!(req.body.username && req.body.password))
+		return res.render('register', {error: 'Username or password not supplied'});
 
-	if (db.prepare('SELECT id FROM userdata WHERE username = ?').get(req.body.username)) res.render('/register', {error: 'User already exists'});
+	if (db.prepare('SELECT id FROM userdata WHERE username = ?').get(req.body.username))
+		return res.render('register', {error: 'User already exists'});
 
-	db.prepare('INSERT INTO userdata (username, password) VALUES (?, ?)').get(req.body.username, req.body.password);
-	res.redirect('/login');
+	db.prepare('INSERT INTO userdata (username, password) VALUES (?, ?)').run(req.body.username, req.body.password);
+	res.redirect('/');
 });
 
 module.exports = router;
